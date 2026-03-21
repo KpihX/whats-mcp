@@ -48,3 +48,4 @@ networks:
 
 volumes:
   whats_mcp_data:
+    name: deploy_whats_mcp_data

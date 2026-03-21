@@ -27,6 +27,7 @@ All notable changes to **whats-mcp** will be documented in this file.
 - **Remote pairing flow added** — HTTP and Telegram admin now expose first-connection / re-pair actions through `POST /admin/pair-code` and `/pair_code <phone>`, backed by the shared `whats-admin login --code --phone ... --force` flow.
 - **Compose project isolation** — whats-mcp deploys now pin the Compose project name to `whats-mcp`, preventing sibling MCP stacks deployed from other `deploy/` directories from being treated as orphans and removed.
 - **Reconnect semantics fixed** — `/reconnect`, `POST /admin/reconnect`, and `whats-admin server reconnect` now trigger a live WhatsApp socket reconnect instead of restarting the container, preventing Telegram command replay loops caused by poll offset resets. `/restart` remains the explicit full-process restart path.
+- **Deploy migration hardened** — the homelab deploy now reuses the existing `deploy_whats_mcp_data` volume and removes any stale `whats-mcp` container before `docker compose up`, preserving the paired WhatsApp session while migrating to the isolated Compose project name.
 
 ## [0.1.0]
 
