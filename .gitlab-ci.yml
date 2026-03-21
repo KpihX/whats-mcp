@@ -13,7 +13,8 @@ validate_project:
   script:
     - |
       if command -v npm >/dev/null 2>&1; then
-        npm ci
+        git config --global url."https://github.com/".insteadOf "git@github.com:"
+        npm install
         npm test -- --runInBand
         node -e "const { loadConfig } = require('./src/config'); const cfg = loadConfig(); if (cfg.server.name !== 'whats-mcp') throw new Error('Unexpected package metadata wiring'); console.log('whats-mcp config smoke test OK');"
       elif command -v docker >/dev/null 2>&1; then
@@ -22,7 +23,8 @@ validate_project:
           -w /work \
           node:22-bookworm-slim \
           sh -c '
-            npm ci &&
+            git config --global url."https://github.com/".insteadOf "git@github.com:" &&
+            npm install &&
             npm test -- --runInBand &&
             node -e "const { loadConfig } = require(\"./src/config\"); const cfg = loadConfig(); if (cfg.server.name !== \"whats-mcp\") throw new Error(\"Unexpected package metadata wiring\"); console.log(\"whats-mcp config smoke test OK\");"
           '
