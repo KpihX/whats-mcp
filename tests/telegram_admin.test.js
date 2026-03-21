@@ -22,19 +22,38 @@ describe("telegram admin dispatch", () => {
     test("dispatches supported commands", async () => {
       jest.resetModules();
       const { dispatchTelegramCommand } = require("../src/admin/telegram");
-      await expect(dispatchTelegramCommand("/help", [], null)).resolves.toBe("HELP");
-      await expect(dispatchTelegramCommand("/status", [], null)).resolves.toBe("STATUS");
-      await expect(dispatchTelegramCommand("/health", [], null)).resolves.toBe("HEALTH");
-      await expect(dispatchTelegramCommand("/urls", [], null)).resolves.toBe("URLS");
-      await expect(dispatchTelegramCommand("/logs", ["7"], null)).resolves.toBe("LOGS:7");
-      await expect(dispatchTelegramCommand("/pair_code", ["+33605957785"], null)).resolves.toContain("PAIR1234");
+      await expect(dispatchTelegramCommand("/help", [], {})).resolves.toBe("HELP");
+      await expect(dispatchTelegramCommand("/status", [], {})).resolves.toBe("STATUS");
+      await expect(dispatchTelegramCommand("/health", [], {})).resolves.toBe("HEALTH");
+      await expect(dispatchTelegramCommand("/urls", [], {})).resolves.toBe("URLS");
+      await expect(dispatchTelegramCommand("/logs", ["7"], {})).resolves.toBe("LOGS:7");
+      await expect(dispatchTelegramCommand("/pair_code", ["+33605957785"], {})).resolves.toContain("PAIR1234");
     });
 
-    test("dispatches restart via callback", () => {
+    test("dispatches reconnect without restart", async () => {
+      jest.resetModules();
+      const handlers = {
+        onReconnect: jest.fn().mockResolvedValue(undefined),
+        onRestart: jest.fn(),
+      };
+      const { dispatchTelegramCommand } = require("../src/admin/telegram");
+      await expect(dispatchTelegramCommand("/reconnect", [], handlers)).resolves.toBe("whats-mcp reconnect requested");
+      expect(handlers.onReconnect).toHaveBeenCalledTimes(1);
+      expect(handlers.onRestart).not.toHaveBeenCalled();
+    });
+
+    test("dispatches restart via callback", async () => {
       jest.useFakeTimers();
       jest.resetModules();
-      const restart = jest.fn();
+      const handlers = {
+        onReconnect: jest.fn(),
+        onRestart: jest.fn(),
+      };
       const { dispatchTelegramCommand } = require("../src/admin/telegram");
-      return expect(dispatchTelegramCommand("/restart", [], restart)).resolves.toBe("whats-mcp reconnect requested");
+      await expect(dispatchTelegramCommand("/restart", [], handlers)).resolves.toBe("whats-mcp restart requested");
+      jest.runOnlyPendingTimers();
+      expect(handlers.onRestart).toHaveBeenCalledTimes(1);
+      expect(handlers.onReconnect).not.toHaveBeenCalled();
+      jest.useRealTimers();
     });
   });

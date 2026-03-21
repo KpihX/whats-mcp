@@ -7,7 +7,7 @@
 
 const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
 
-const { connect } = require("./connection");
+const { connect, requestReconnect } = require("./connection");
 const { loadConfig } = require("./config");
 const { createHttpApp, bootstrapHttpRuntime } = require("./http_app");
 const { createLogger, createMcpServer } = require("./server");
@@ -25,9 +25,13 @@ async function serveStdio() {
 }
 
 async function serveHttp() {
-  const { app, config } = await createHttpApp(() => process.exit(0));
+  const handlers = {
+    onReconnect: () => requestReconnect(),
+    onRestart: () => process.exit(0),
+  };
+  const { app, config } = await createHttpApp(handlers);
   const logger = createLogger(config);
-  await bootstrapHttpRuntime(() => process.exit(0));
+  await bootstrapHttpRuntime(handlers);
   app.listen(config.server.http_port, config.server.http_host, () => {
     logger.info(
       {

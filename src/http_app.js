@@ -21,6 +21,7 @@ const {
   statusSummaryText,
   urlsSummary,
 } = require("./admin/service");
+const { requestReconnect } = require("./connection");
 const {
   startTelegramAdmin,
   telegramAdminEnabled,
@@ -125,17 +126,27 @@ function adminHelpHandler(config) {
     };
   }
 
-function adminReconnectHandler(onRestart) {
+function adminReconnectHandler(handlers = {}) {
   return async (_req, res) => {
     appendAdminLog("http admin reconnect requested");
-    if (onRestart) {
-      setTimeout(() => onRestart(), 1000);
+    try {
+      if (handlers.onReconnect) {
+        await handlers.onReconnect();
+      } else {
+        await requestReconnect();
+      }
+      res.json({
+        ok: true,
+        action: "reconnect",
+        message: "whats-mcp reconnect requested",
+      });
+    } catch (error) {
+      res.status(500).json({
+        ok: false,
+        action: "reconnect",
+        error: error.message || String(error),
+      });
     }
-    res.json({
-      ok: true,
-      action: "reconnect",
-      message: "whats-mcp reconnect requested",
-    });
   };
 }
 
@@ -161,7 +172,7 @@ function adminPairCodeHandler() {
   };
 }
 
-async function createHttpApp(onRestart = null) {
+async function createHttpApp(handlers = {}) {
   const config = loadConfig();
   const logger = createLogger(config);
   const app = express();
@@ -172,7 +183,7 @@ async function createHttpApp(onRestart = null) {
   app.get("/health", healthHandler(config));
   app.get("/admin/status", adminStatusHandler(config));
   app.get("/admin/help", adminHelpHandler(config));
-  app.post("/admin/reconnect", adminReconnectHandler(onRestart));
+  app.post("/admin/reconnect", adminReconnectHandler(handlers));
   app.post("/admin/pair-code", adminPairCodeHandler());
 
   const mcpPostHandler = async (req, res) => {
@@ -239,10 +250,10 @@ async function createHttpApp(onRestart = null) {
   return { app, config };
 }
 
-async function bootstrapHttpRuntime(onRestart) {
+async function bootstrapHttpRuntime(handlers = {}) {
   const config = loadConfig();
   connect(config).catch(() => {});
-  startTelegramAdmin(onRestart);
+  startTelegramAdmin(handlers);
 }
 
 module.exports = {

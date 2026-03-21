@@ -2,6 +2,7 @@
 
 jest.mock("../src/connection", () => ({
   connect: jest.fn(),
+  requestReconnect: jest.fn(),
 }));
 
 jest.mock("../src/http_app", () => ({

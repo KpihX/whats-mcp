@@ -40,6 +40,7 @@ let reconnectAttempts = 0;
 /** @type {any} */
 let config = null;
 let persistStoreTimer = null;
+let currentAuthPath = null;
 
 // ── Logging (stderr only — stdout is MCP JSON-RPC) ──────────────────────────
 
@@ -61,6 +62,7 @@ async function connect(cfg) {
     os.homedir()
   );
   const authPath = path.join(stateDir, "auth");
+  currentAuthPath = authPath;
   const pidFile  = path.join(stateDir, "whats-mcp.pid");
   const storeFile = path.join(stateDir, "store.json");
 
@@ -121,6 +123,19 @@ async function connect(cfg) {
   await _createSocket(authPath, cfg);
 
   return { sock, store };
+}
+
+/**
+ * Request an explicit reconnect of the live WhatsApp socket without restarting
+ * the container. This keeps admin pollers and in-memory state stable.
+ */
+async function requestReconnect() {
+  if (!config || !currentAuthPath) {
+    throw new Error("WhatsApp runtime is not initialized yet.");
+  }
+  log("[WA] Admin reconnect requested.");
+  await _createSocket(currentAuthPath, config);
+  return getConnectionInfo();
 }
 
 /**
@@ -315,4 +330,5 @@ module.exports = {
   getSocket,
   getStore,
   getConnectionInfo,
+  requestReconnect,
 };

@@ -137,6 +137,11 @@ curl -fsS -X POST https://whats.kpihx-labs.com/admin/reconnect
 docker exec -it whats-mcp whats-admin server reconnect
 ```
 
+Reconnect semantics:
+
+- `reconnect` performs an in-process WhatsApp socket reconnect and keeps the HTTP server plus Telegram poller alive.
+- `restart` restarts the container process and should be reserved for full service restarts, not routine session refreshes.
+
 ## Telegram Admin
 
 When both variables are configured:

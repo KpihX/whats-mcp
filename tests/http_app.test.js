@@ -6,6 +6,7 @@ jest.mock("../src/connection", () => ({
     store_stats: { chats: 2, contacts: 3, messages: 10 },
     reconnect_attempts: 0,
   })),
+  requestReconnect: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock("../src/admin/service", () => ({
@@ -83,13 +84,14 @@ describe("HTTP admin surface", () => {
       expect(res.payload.help.routes.admin_help).toBe("/admin/help");
     });
 
-    test("admin reconnect acknowledges restart requests", async () => {
+    test("admin reconnect triggers live reconnect requests", async () => {
       const res = mockResponse();
-      const onRestart = jest.fn();
-      await adminReconnectHandler(onRestart)({}, res);
+      const handlers = { onReconnect: jest.fn().mockResolvedValue(undefined) };
+      await adminReconnectHandler(handlers)({}, res);
       expect(res.statusCode).toBe(200);
       expect(res.payload.action).toBe("reconnect");
       expect(res.payload.message).toBe("whats-mcp reconnect requested");
+      expect(handlers.onReconnect).toHaveBeenCalledTimes(1);
     });
 
     test("admin pair-code returns a generated pairing code", async () => {

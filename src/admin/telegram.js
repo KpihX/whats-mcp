@@ -65,7 +65,9 @@ function parseAllowedChatIds() {
     .filter(Boolean);
 }
 
-async function dispatchTelegramCommand(command, args, onRestart) {
+async function dispatchTelegramCommand(command, args, handlers = {}) {
+  const onReconnect = handlers.onReconnect || null;
+  const onRestart = handlers.onRestart || null;
   if (command === "/start" || command === "/help") return adminHelpText();
   if (command === "/status") return statusSummaryText();
   if (command === "/health") return healthSummaryText();
@@ -87,16 +89,22 @@ async function dispatchTelegramCommand(command, args, onRestart) {
       "- enter the code on your phone before it expires",
     ].join("\n");
   }
-  if (command === "/restart" || command === "/reconnect") {
+  if (command === "/reconnect") {
+    if (onReconnect) {
+      await onReconnect();
+    }
+    return "whats-mcp reconnect requested";
+  }
+  if (command === "/restart") {
     if (onRestart) {
       setTimeout(() => onRestart(), 1000);
     }
-    return "whats-mcp reconnect requested";
+    return "whats-mcp restart requested";
   }
   return "Unknown command. Use /help.";
 }
 
-function startTelegramAdmin(onRestart) {
+function startTelegramAdmin(handlers = {}) {
   if (pollerHandle || !telegramAdminEnabled()) {
     return;
   }
@@ -128,7 +136,7 @@ function startTelegramAdmin(onRestart) {
         if (!allowedChatIds.includes(chatId)) continue;
         const [command, ...args] = message.text.trim().split(/\s+/);
         TELEGRAM_RUNTIME.last_command = command;
-          const reply = await dispatchTelegramCommand(command, args, onRestart);
+          const reply = await dispatchTelegramCommand(command, args, handlers);
         TELEGRAM_RUNTIME.last_reply_preview = reply.slice(0, 120);
         appendAdminLog(`telegram command chat=${chatId} command=${command}`);
         await sendMessage(chatId, reply);

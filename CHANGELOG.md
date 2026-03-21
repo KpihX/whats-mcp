@@ -26,6 +26,7 @@ All notable changes to **whats-mcp** will be documented in this file.
 - **Admin reconnect path clarified** — CLI and Telegram now expose a `reconnect` operator action, and pairing code login accepts phone formats like `+33605957785`.
 - **Remote pairing flow added** — HTTP and Telegram admin now expose first-connection / re-pair actions through `POST /admin/pair-code` and `/pair_code <phone>`, backed by the shared `whats-admin login --code --phone ... --force` flow.
 - **Compose project isolation** — whats-mcp deploys now pin the Compose project name to `whats-mcp`, preventing sibling MCP stacks deployed from other `deploy/` directories from being treated as orphans and removed.
+- **Reconnect semantics fixed** — `/reconnect`, `POST /admin/reconnect`, and `whats-admin server reconnect` now trigger a live WhatsApp socket reconnect instead of restarting the container, preventing Telegram command replay loops caused by poll offset resets. `/restart` remains the explicit full-process restart path.
 
 ## [0.1.0]
 
