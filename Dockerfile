@@ -3,7 +3,10 @@ FROM oven/bun:1-slim
 WORKDIR /app
 
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production
+RUN apt-get update -qq && apt-get install -y --no-install-recommends git \
+    && bun install --frozen-lockfile --production \
+    && apt-get purge -y git && apt-get autoremove -y -qq \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY src ./src
 COPY config.json ./config.json
