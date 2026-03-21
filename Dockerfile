@@ -1,12 +1,9 @@
-FROM oven/bun:1-slim
+FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-COPY package.json bun.lock ./
-RUN apt-get update -qq && apt-get install -y --no-install-recommends git \
-    && bun install --frozen-lockfile --production \
-    && apt-get purge -y git && apt-get autoremove -y -qq \
-    && rm -rf /var/lib/apt/lists/*
+COPY package*.json ./
+RUN npm ci --omit=dev
 
 COPY src ./src
 COPY config.json ./config.json
@@ -28,4 +25,4 @@ VOLUME ["/data"]
 
 EXPOSE 8092
 
-CMD ["bun", "src/main.js", "serve-http"]
+CMD ["node", "src/main.js", "serve-http"]
