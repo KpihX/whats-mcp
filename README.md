@@ -1,5 +1,9 @@
 # whats-mcp
 
+[![npm](https://img.shields.io/npm/v/whats-mcp)](https://www.npmjs.com/package/whats-mcp)
+[![Node](https://img.shields.io/node/v/whats-mcp)](https://www.npmjs.com/package/whats-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Comprehensive **WhatsApp MCP server** powered by Baileys, with intent-first read surfaces and dual transport support:
 
 - local `stdio` for direct MCP clients
@@ -47,7 +51,11 @@ src/
 ## Installation
 
 ```bash
-npm install
+# recommended — installs globally as a standalone tool
+npm install -g whats-mcp
+
+# or via npx (no install)
+npx whats-mcp
 ```
 
 Commands exposed:
