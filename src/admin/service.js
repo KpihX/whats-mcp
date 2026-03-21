@@ -177,7 +177,7 @@ function requestPairingCode(phone) {
       [cliEntry, "login", "--code", "--phone", normalizedPhone, "--force"],
       {
         cwd: path.resolve(__dirname, ".."),
-        env: process.env,
+        env: { ...process.env, NO_COLOR: "1" },
         stdio: ["ignore", "pipe", "pipe"],
       },
     );
@@ -200,7 +200,8 @@ function requestPairingCode(phone) {
     let settled = false;
     const handleChunk = (chunk) => {
       const text = String(chunk || "");
-      const match = text.match(/Pairing Code:\s*([A-Z0-9-]+)/i);
+      const plainText = text.replace(/\x1B\[[0-9;]*m/g, "");
+      const match = plainText.match(/Pairing Code:\s*([A-Z0-9-]+)/i);
       if (!match || settled) return;
       settled = true;
       const code = match[1];

@@ -241,7 +241,7 @@ async function createHttpApp(onRestart = null) {
 
 async function bootstrapHttpRuntime(onRestart) {
   const config = loadConfig();
-  await connect(config).catch(() => {});
+  connect(config).catch(() => {});
   startTelegramAdmin(onRestart);
 }
 
