@@ -29,13 +29,13 @@ deploy_homelab:
     - echo "WHATS_MCP_HTTP_HOST=0.0.0.0" >> .env
     - echo "WHATS_MCP_HTTP_PORT=8092" >> .env
     - echo "WHATS_MCP_HTTP_MCP_PATH=/mcp" >> .env
-      - echo "WHATS_MCP_ADMIN_ENV_FILE=/data/whats-admin.env" >> .env
-      - echo "WHATS_MCP_PUBLIC_BASE_URL=https://whats.kpihx-labs.com" >> .env
-      - echo "WHATS_MCP_FALLBACK_BASE_URL=https://whats.homelab" >> .env
-      - echo "TELEGRAM_WHATS_HOMELAB_TOKEN=$TELEGRAM_WHATS_HOMELAB_TOKEN" >> .env
-      - echo "TELEGRAM_CHAT_IDS=$TELEGRAM_CHAT_IDS" >> .env
-      - docker compose -p whats-mcp config -q
-      - docker compose -p whats-mcp up -d --build --remove-orphans
+    - echo "WHATS_MCP_ADMIN_ENV_FILE=/data/whats-admin.env" >> .env
+    - echo "WHATS_MCP_PUBLIC_BASE_URL=https://whats.kpihx-labs.com" >> .env
+    - echo "WHATS_MCP_FALLBACK_BASE_URL=https://whats.homelab" >> .env
+    - echo "TELEGRAM_WHATS_HOMELAB_TOKEN=$TELEGRAM_WHATS_HOMELAB_TOKEN" >> .env
+    - echo "TELEGRAM_CHAT_IDS=$TELEGRAM_CHAT_IDS" >> .env
+    - docker compose -p whats-mcp config -q
+    - docker compose -p whats-mcp up -d --build --remove-orphans
     - |
       for attempt in $(seq 1 20); do
         status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}starting{{end}}' whats-mcp 2>/dev/null || true)"
