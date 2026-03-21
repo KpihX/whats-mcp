@@ -7,31 +7,27 @@ variables:
 
 validate_project:
   stage: validate
-  image: oven/bun:1
+  image: node:22-bookworm-slim
   variables:
     GIT_CLEAN_FLAGS: none
   script:
     - |
-      if command -v bun >/dev/null 2>&1; then
-        apt-get update -qq && apt-get install -y --no-install-recommends git
-        git config --global url."https://github.com/".insteadOf "git@github.com:"
-        bun install --frozen-lockfile
-        bun x jest --runInBand
-        bun -e "const { loadConfig } = require('./src/config'); const cfg = loadConfig(); if (cfg.server.name !== 'whats-mcp') throw new Error('Unexpected package metadata wiring'); console.log('whats-mcp config smoke test OK');"
+      if command -v npm >/dev/null 2>&1; then
+        npm ci
+        npm test -- --runInBand
+        node -e "const { loadConfig } = require('./src/config'); const cfg = loadConfig(); if (cfg.server.name !== 'whats-mcp') throw new Error('Unexpected package metadata wiring'); console.log('whats-mcp config smoke test OK');"
       elif command -v docker >/dev/null 2>&1; then
         docker run --rm \
           -v "$CI_PROJECT_DIR:/work" \
           -w /work \
-          oven/bun:1 \
+          node:22-bookworm-slim \
           sh -c '
-            apt-get update -qq && apt-get install -y --no-install-recommends git &&
-            git config --global url."https://github.com/".insteadOf "git@github.com:" &&
-            bun install --frozen-lockfile &&
-            bun x jest --runInBand &&
-            bun -e "const { loadConfig } = require(\"./src/config\"); const cfg = loadConfig(); if (cfg.server.name !== \"whats-mcp\") throw new Error(\"Unexpected package metadata wiring\"); console.log(\"whats-mcp config smoke test OK\");"
+            npm ci &&
+            npm test -- --runInBand &&
+            node -e "const { loadConfig } = require(\"./src/config\"); const cfg = loadConfig(); if (cfg.server.name !== \"whats-mcp\") throw new Error(\"Unexpected package metadata wiring\"); console.log(\"whats-mcp config smoke test OK\");"
           '
       else
-        echo "Neither bun nor docker is available on this runner."
+        echo "Neither npm nor docker is available on this runner."
         exit 1
       fi
 
