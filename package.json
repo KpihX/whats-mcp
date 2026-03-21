@@ -13,8 +13,8 @@
     "admin": "bun src/admin.js",
     "login": "bun src/admin.js login",
     "login:code": "bun src/admin.js login --code",
-    "test": "bun x jest --runInBand --coverage",
-    "test:watch": "bun x jest --watch",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
     "stop": "bun src/admin.js server stop",
     "status": "bun src/admin.js status"
   },
