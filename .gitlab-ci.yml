@@ -6,6 +6,7 @@ validate_project:
   stage: validate
   image: oven/bun:1
   script:
+    - apt-get update -qq && apt-get install -y -qq git
     - bun install --frozen-lockfile
     - bun x jest --runInBand
     - bun -e "const { loadConfig } = require('./src/config'); const cfg = loadConfig(); if (cfg.server.name !== 'whats-mcp') throw new Error('Unexpected package metadata wiring'); console.log('whats-mcp config smoke test OK');"
