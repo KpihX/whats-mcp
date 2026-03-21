@@ -10,6 +10,7 @@ jest.mock("../src/connection", () => ({
 
 jest.mock("../src/admin/service", () => ({
   adminHelpText: jest.fn(() => "help-text"),
+  appendAdminLog: jest.fn(),
   authSummary: jest.fn(() => ({
     state_directory: "/tmp/whatsapp",
     auth_directory: "/tmp/whatsapp/auth",
@@ -19,6 +20,8 @@ jest.mock("../src/admin/service", () => ({
     connection: { state: "open" },
   })),
   healthSummaryText: jest.fn(() => "health-summary"),
+  pairingRuntimeStatus: jest.fn(() => ({ active: false, phone: null })),
+  requestPairingCode: jest.fn(async (phone) => ({ phone: "33600000000", code: "PAIR1234" })),
   statusSummaryText: jest.fn(() => "whats-admin status"),
   urlsSummary: jest.fn(() => "urls-summary"),
 }));
@@ -26,21 +29,27 @@ jest.mock("../src/admin/service", () => ({
 const { loadConfig } = require("../src/config");
 const {
   adminHelpHandler,
+  adminPairCodeHandler,
+  adminReconnectHandler,
   adminStatusHandler,
   healthHandler,
 } = require("../src/http_app");
 
-function mockResponse() {
+  function mockResponse() {
   return {
     statusCode: null,
     payload: null,
-    json(body) {
-      this.statusCode = 200;
-      this.payload = body;
-      return body;
-    },
-  };
-}
+      json(body) {
+        this.statusCode = 200;
+        this.payload = body;
+        return body;
+      },
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+    };
+  }
 
 describe("HTTP admin surface", () => {
   test("health exposes transport and auth persistence probe", async () => {
@@ -59,17 +68,35 @@ describe("HTTP admin surface", () => {
     const res = mockResponse();
     await adminStatusHandler(cfg)({}, res);
     expect(res.statusCode).toBe(200);
-    expect(res.payload.admin.ssh_admin.supported).toBe(true);
-    expect(res.payload.admin.telegram_admin.token_env).toBe("TELEGRAM_WHATS_HOMELAB_TOKEN");
-    expect(res.payload.admin.status_summary).toBe("whats-admin status");
-  });
+      expect(res.payload.admin.ssh_admin.supported).toBe(true);
+      expect(res.payload.admin.telegram_admin.token_env).toBe("TELEGRAM_WHATS_HOMELAB_TOKEN");
+      expect(res.payload.admin.status_summary).toBe("whats-admin status");
+      expect(res.payload.admin.pairing_runtime.active).toBe(false);
+    });
 
   test("admin help exposes shared capability summary", async () => {
     const cfg = loadConfig();
     const res = mockResponse();
     await adminHelpHandler(cfg)({}, res);
     expect(res.statusCode).toBe(200);
-    expect(res.payload.help.text).toBe("help-text");
-    expect(res.payload.help.routes.admin_help).toBe("/admin/help");
+      expect(res.payload.help.text).toBe("help-text");
+      expect(res.payload.help.routes.admin_help).toBe("/admin/help");
+    });
+
+    test("admin reconnect acknowledges restart requests", async () => {
+      const res = mockResponse();
+      const onRestart = jest.fn();
+      await adminReconnectHandler(onRestart)({}, res);
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.action).toBe("reconnect");
+      expect(res.payload.message).toBe("whats-mcp reconnect requested");
+    });
+
+    test("admin pair-code returns a generated pairing code", async () => {
+      const res = mockResponse();
+      await adminPairCodeHandler()({ body: { phone: "+33600000000" } }, res);
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.action).toBe("pair-code");
+      expect(res.payload.code).toBe("PAIR1234");
+    });
   });
-});

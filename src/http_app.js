@@ -15,6 +15,9 @@ const {
   adminHelpText,
   authSummary,
   healthSummaryText,
+  appendAdminLog,
+  pairingRuntimeStatus,
+  requestPairingCode,
   statusSummaryText,
   urlsSummary,
 } = require("./admin/service");
@@ -73,25 +76,28 @@ function adminStatusHandler(config) {
         enabled: telegramAdminEnabled(),
         runtime: telegramAdminRuntimeStatus(),
       },
-      auth_probe: {
-        state_directory: authSummary().state_directory,
-        auth_directory: authSummary().auth_directory,
-        auth_persisted: authSummary().auth_present,
-        connection_state: getConnectionInfo().state,
-      },
-      status_summary: statusSummaryText({
-        pid: process.pid,
-        running: true,
+        auth_probe: {
+          state_directory: authSummary().state_directory,
+          auth_directory: authSummary().auth_directory,
+          auth_persisted: authSummary().auth_present,
+          connection_state: getConnectionInfo().state,
+        },
+        pairing_runtime: pairingRuntimeStatus(),
+        status_summary: statusSummaryText({
+          pid: process.pid,
+          running: true,
         connection_state: getConnectionInfo().state,
         user: getConnectionInfo().user,
       }),
     };
-    payload.routes = {
-      health: "/health",
-      admin_status: "/admin/status",
-      admin_help: "/admin/help",
-      mcp: config.server.http_mcp_path,
-    };
+      payload.routes = {
+        health: "/health",
+        admin_status: "/admin/status",
+        admin_help: "/admin/help",
+        admin_reconnect: "/admin/reconnect",
+        admin_pair_code: "/admin/pair-code",
+        mcp: config.server.http_mcp_path,
+      };
     res.json(payload);
   };
 }
@@ -106,18 +112,56 @@ function adminHelpHandler(config) {
         health: healthSummaryText(),
         urls: urlsSummary(),
       },
-      routes: {
-        health: "/health",
-        admin_status: "/admin/status",
-        admin_help: "/admin/help",
-        mcp: config.server.http_mcp_path,
-      },
+        routes: {
+          health: "/health",
+          admin_status: "/admin/status",
+          admin_help: "/admin/help",
+          admin_reconnect: "/admin/reconnect",
+          admin_pair_code: "/admin/pair-code",
+          mcp: config.server.http_mcp_path,
+        },
+      };
+      res.json(payload);
     };
-    res.json(payload);
+  }
+
+function adminReconnectHandler(onRestart) {
+  return async (_req, res) => {
+    appendAdminLog("http admin reconnect requested");
+    if (onRestart) {
+      setTimeout(() => onRestart(), 1000);
+    }
+    res.json({
+      ok: true,
+      action: "reconnect",
+      message: "whats-mcp reconnect requested",
+    });
   };
 }
 
-async function createHttpApp() {
+function adminPairCodeHandler() {
+  return async (req, res) => {
+    try {
+      const pairing = await requestPairingCode(req.body?.phone || "");
+      appendAdminLog(`http admin pairing code generated for ${pairing.phone}`);
+      res.json({
+        ok: true,
+        action: "pair-code",
+        phone: pairing.phone,
+        code: pairing.code,
+        message: "Pairing code generated. Enter it on your phone before it expires.",
+      });
+    } catch (error) {
+      res.status(400).json({
+        ok: false,
+        action: "pair-code",
+        error: error.message || String(error),
+      });
+    }
+  };
+}
+
+async function createHttpApp(onRestart = null) {
   const config = loadConfig();
   const logger = createLogger(config);
   const app = express();
@@ -128,6 +172,8 @@ async function createHttpApp() {
   app.get("/health", healthHandler(config));
   app.get("/admin/status", adminStatusHandler(config));
   app.get("/admin/help", adminHelpHandler(config));
+  app.post("/admin/reconnect", adminReconnectHandler(onRestart));
+  app.post("/admin/pair-code", adminPairCodeHandler());
 
   const mcpPostHandler = async (req, res) => {
     const sessionId = req.headers["mcp-session-id"];
@@ -201,6 +247,8 @@ async function bootstrapHttpRuntime(onRestart) {
 
 module.exports = {
   adminHelpHandler,
+  adminPairCodeHandler,
+  adminReconnectHandler,
   adminStatusHandler,
   bootstrapHttpRuntime,
   createHttpApp,

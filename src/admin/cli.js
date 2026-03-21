@@ -236,6 +236,7 @@ program
   .command("login")
   .description("Login to WhatsApp (interactive QR or pairing code)")
   .option("--code", "Use pairing code instead of QR (enter phone number)")
+  .option("--force", "Overwrite any existing auth credentials without prompting")
   .option(
     "--phone <number>",
     "Phone number for pairing code (with country code, e.g. 33612345678)",
@@ -244,9 +245,9 @@ program
     if (authExists()) {
       const me = readCredsMe();
       const who = me ? ` (${me.name || "?"} / ${me.id?.split(":")[0] || "?"})` : "";
-      const overwrite = await confirm(
-        `  ${warn()} Auth credentials already exist${who}. Overwrite?`,
-      );
+      const overwrite = opts.force
+        ? true
+        : await confirm(`  ${warn()} Auth credentials already exist${who}. Overwrite?`);
       if (!overwrite) {
         console.log("  Aborted.");
         process.exit(0);

@@ -23,6 +23,8 @@ Comprehensive **WhatsApp MCP server** powered by Baileys, with intent-first read
   - `/health`
   - `/admin/status`
   - `/admin/help`
+  - `POST /admin/reconnect`
+  - `POST /admin/pair-code`
   - Telegram admin bridge when configured
 
 ## Package Layout
@@ -75,6 +77,8 @@ Default HTTP surface:
 - Health: `/health`
 - Admin status: `/admin/status`
 - Admin help: `/admin/help`
+- Admin reconnect: `POST /admin/reconnect`
+- Admin pair-code: `POST /admin/pair-code`
 
 Default URLs:
 
@@ -115,7 +119,7 @@ Main commands:
 ```text
 whats-admin status
 whats-admin guide
-whats-admin login [--code] [--phone N]
+whats-admin login [--code] [--phone N] [--force]
 whats-admin logout [-f]
 whats-admin server status|stop|restart|reconnect|pid|test
 whats-admin config show|edit|reset|path
@@ -128,6 +132,8 @@ Container usage:
 docker exec -it whats-mcp whats-admin status
 docker exec -it whats-mcp whats-admin login
 docker exec -it whats-mcp whats-admin login --code --phone +33605957785
+curl -fsS -X POST https://whats.kpihx-labs.com/admin/pair-code -H 'content-type: application/json' -d '{"phone":"33605957785"}'
+curl -fsS -X POST https://whats.kpihx-labs.com/admin/reconnect
 docker exec -it whats-mcp whats-admin server reconnect
 ```
 
@@ -149,6 +155,7 @@ Current commands:
 /health
 /urls
 /logs [lines]
+/pair_code <phone>
 /reconnect
 /restart
 ```

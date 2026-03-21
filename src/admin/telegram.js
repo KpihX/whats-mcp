@@ -9,6 +9,7 @@ const {
   appendAdminLog,
   getLogsText,
   healthSummaryText,
+  requestPairingCode,
   statusSummaryText,
   urlsSummary,
 } = require("./service");
@@ -64,7 +65,7 @@ function parseAllowedChatIds() {
     .filter(Boolean);
 }
 
-function dispatchTelegramCommand(command, args, onRestart) {
+async function dispatchTelegramCommand(command, args, onRestart) {
   if (command === "/start" || command === "/help") return adminHelpText();
   if (command === "/status") return statusSummaryText();
   if (command === "/health") return healthSummaryText();
@@ -72,6 +73,19 @@ function dispatchTelegramCommand(command, args, onRestart) {
   if (command === "/logs") {
     const limit = Number.parseInt(args[0] || "20", 10);
     return getLogsText(Number.isNaN(limit) ? 20 : limit);
+  }
+  if (command === "/pair_code") {
+    if (!args[0]) {
+      return "Usage: /pair_code <phone>";
+    }
+    const pairing = await requestPairingCode(args[0]);
+    return [
+      "whats-mcp pairing code",
+      `- phone: ${pairing.phone}`,
+      `- code: ${pairing.code}`,
+      "- go to WhatsApp → Linked Devices → Link with Phone Number",
+      "- enter the code on your phone before it expires",
+    ].join("\n");
   }
   if (command === "/restart" || command === "/reconnect") {
     if (onRestart) {
@@ -114,7 +128,7 @@ function startTelegramAdmin(onRestart) {
         if (!allowedChatIds.includes(chatId)) continue;
         const [command, ...args] = message.text.trim().split(/\s+/);
         TELEGRAM_RUNTIME.last_command = command;
-        const reply = dispatchTelegramCommand(command, args, onRestart);
+          const reply = await dispatchTelegramCommand(command, args, onRestart);
         TELEGRAM_RUNTIME.last_reply_preview = reply.slice(0, 120);
         appendAdminLog(`telegram command chat=${chatId} command=${command}`);
         await sendMessage(chatId, reply);

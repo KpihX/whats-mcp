@@ -4,6 +4,7 @@
 
 "use strict";
 
+const { spawn } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -68,6 +69,14 @@ function authSummary() {
   };
 }
 
+const PAIRING_RUNTIME = {
+  active: false,
+  phone: null,
+  started_at: null,
+  pairing_code: null,
+  last_error: null,
+};
+
 function statusSummaryText(overrides = {}) {
   const cfg = loadConfig();
   const summary = authSummary();
@@ -128,6 +137,8 @@ function adminHelpText() {
     "  - GET /health",
     "  - GET /admin/status",
     "  - GET /admin/help",
+    "  - POST /admin/reconnect",
+    "  - POST /admin/pair-code {\"phone\":\"33612345678\"}",
     "- Telegram:",
     "  - /start",
     "  - /help",
@@ -135,9 +146,95 @@ function adminHelpText() {
     "  - /health",
     "  - /urls",
     "  - /logs [lines]",
+    "  - /pair_code <phone>",
     "  - /reconnect",
     "  - /restart",
   ].join("\n");
+}
+
+function normalizePhoneNumber(raw) {
+  return String(raw || "").replace(/[^\d]/g, "");
+}
+
+function pairingRuntimeStatus() {
+  return { ...PAIRING_RUNTIME };
+}
+
+function requestPairingCode(phone) {
+  const normalizedPhone = normalizePhoneNumber(phone);
+  if (!normalizedPhone || !/^\d{8,15}$/.test(normalizedPhone)) {
+    throw new Error("Invalid phone number. Use country code; separators are allowed and will be stripped.");
+  }
+  if (PAIRING_RUNTIME.active) {
+    const activeFor = PAIRING_RUNTIME.phone || "another number";
+    throw new Error(`A pairing flow is already active for ${activeFor}. Finish or wait for it to time out.`);
+  }
+
+  return new Promise((resolve, reject) => {
+    const cliEntry = path.join(__dirname, "..", "admin.js");
+    const child = spawn(
+      process.execPath,
+      [cliEntry, "login", "--code", "--phone", normalizedPhone, "--force"],
+      {
+        cwd: path.resolve(__dirname, ".."),
+        env: process.env,
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+
+    PAIRING_RUNTIME.active = true;
+    PAIRING_RUNTIME.phone = normalizedPhone;
+    PAIRING_RUNTIME.started_at = Math.floor(Date.now() / 1000);
+    PAIRING_RUNTIME.pairing_code = null;
+    PAIRING_RUNTIME.last_error = null;
+
+    const cleanup = (errorMessage = null) => {
+      PAIRING_RUNTIME.active = false;
+      PAIRING_RUNTIME.phone = null;
+      PAIRING_RUNTIME.started_at = null;
+      if (errorMessage) {
+        PAIRING_RUNTIME.last_error = errorMessage;
+      }
+    };
+
+    let settled = false;
+    const handleChunk = (chunk) => {
+      const text = String(chunk || "");
+      const match = text.match(/Pairing Code:\s*([A-Z0-9-]+)/i);
+      if (!match || settled) return;
+      settled = true;
+      const code = match[1];
+      PAIRING_RUNTIME.pairing_code = code;
+      appendAdminLog(`pairing code generated for ${normalizedPhone}`);
+      resolve({
+        phone: normalizedPhone,
+        code,
+      });
+    };
+
+    child.stdout.on("data", handleChunk);
+    child.stderr.on("data", handleChunk);
+
+    child.on("error", (error) => {
+      cleanup(error.message || String(error));
+      if (!settled) {
+        settled = true;
+        reject(error);
+      }
+    });
+
+    child.on("exit", (code, signal) => {
+      const errorMessage =
+        code === 0 && !signal
+          ? null
+          : `pairing helper exited with code=${code ?? "null"} signal=${signal ?? "null"}`;
+      cleanup(errorMessage);
+      if (!settled) {
+        settled = true;
+        reject(new Error(PAIRING_RUNTIME.last_error || "Pairing flow ended before a code was produced."));
+      }
+    });
+  });
 }
 
 function getLogsText(limit = 50) {
@@ -162,7 +259,10 @@ module.exports = {
   healthSummaryText,
   isRunning,
   logFile,
+  normalizePhoneNumber,
+  pairingRuntimeStatus,
   pidFile,
+  requestPairingCode,
   readPid,
   stateDir,
   statusSummaryText,

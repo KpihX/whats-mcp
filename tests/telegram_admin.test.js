@@ -5,6 +5,7 @@ jest.mock("../src/admin/service", () => ({
   appendAdminLog: jest.fn(),
   getLogsText: jest.fn((limit) => `LOGS:${limit}`),
   healthSummaryText: jest.fn(() => "HEALTH"),
+  requestPairingCode: jest.fn(async (phone) => ({ phone, code: "PAIR1234" })),
   statusSummaryText: jest.fn(() => "STATUS"),
   urlsSummary: jest.fn(() => "URLS"),
 }));
@@ -18,21 +19,22 @@ describe("telegram admin dispatch", () => {
     expect(telegramAdminEnabled()).toBe(true);
   });
 
-  test("dispatches supported commands", () => {
-    jest.resetModules();
-    const { dispatchTelegramCommand } = require("../src/admin/telegram");
-    expect(dispatchTelegramCommand("/help", [], null)).toBe("HELP");
-    expect(dispatchTelegramCommand("/status", [], null)).toBe("STATUS");
-    expect(dispatchTelegramCommand("/health", [], null)).toBe("HEALTH");
-    expect(dispatchTelegramCommand("/urls", [], null)).toBe("URLS");
-    expect(dispatchTelegramCommand("/logs", ["7"], null)).toBe("LOGS:7");
-  });
+    test("dispatches supported commands", async () => {
+      jest.resetModules();
+      const { dispatchTelegramCommand } = require("../src/admin/telegram");
+      await expect(dispatchTelegramCommand("/help", [], null)).resolves.toBe("HELP");
+      await expect(dispatchTelegramCommand("/status", [], null)).resolves.toBe("STATUS");
+      await expect(dispatchTelegramCommand("/health", [], null)).resolves.toBe("HEALTH");
+      await expect(dispatchTelegramCommand("/urls", [], null)).resolves.toBe("URLS");
+      await expect(dispatchTelegramCommand("/logs", ["7"], null)).resolves.toBe("LOGS:7");
+      await expect(dispatchTelegramCommand("/pair_code", ["+33605957785"], null)).resolves.toContain("PAIR1234");
+    });
 
-  test("dispatches restart via callback", () => {
-    jest.useFakeTimers();
-    jest.resetModules();
-    const restart = jest.fn();
-    const { dispatchTelegramCommand } = require("../src/admin/telegram");
-    expect(dispatchTelegramCommand("/restart", [], restart)).toBe("whats-mcp reconnect requested");
+    test("dispatches restart via callback", () => {
+      jest.useFakeTimers();
+      jest.resetModules();
+      const restart = jest.fn();
+      const { dispatchTelegramCommand } = require("../src/admin/telegram");
+      return expect(dispatchTelegramCommand("/restart", [], restart)).resolves.toBe("whats-mcp reconnect requested");
+    });
   });
-});

@@ -24,6 +24,7 @@ All notable changes to **whats-mcp** will be documented in this file.
 - **Deploy health probes fixed** — Docker Compose and GitLab now use Node-native fetch probes instead of assuming `curl` exists inside the image.
 - **Container operator binaries exposed** — the image now installs `whats-mcp` and `whats-admin` on `PATH` so `docker exec ... whats-admin ...` works directly.
 - **Admin reconnect path clarified** — CLI and Telegram now expose a `reconnect` operator action, and pairing code login accepts phone formats like `+33605957785`.
+- **Remote pairing flow added** — HTTP and Telegram admin now expose first-connection / re-pair actions through `POST /admin/pair-code` and `/pair_code <phone>`, backed by the shared `whats-admin login --code --phone ... --force` flow.
 
 ## [0.1.0]
 

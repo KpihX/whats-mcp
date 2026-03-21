@@ -25,7 +25,7 @@ async function serveStdio() {
 }
 
 async function serveHttp() {
-  const { app, config } = await createHttpApp();
+  const { app, config } = await createHttpApp(() => process.exit(0));
   const logger = createLogger(config);
   await bootstrapHttpRuntime(() => process.exit(0));
   app.listen(config.server.http_port, config.server.http_host, () => {
