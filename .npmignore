@@ -1,0 +1,23 @@
+# Dev / CI artifacts
+coverage/
+lancedb/
+tests/
+*.log
+
+# Agent / editor private artifacts
+.agent/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+COPILOT.md
+VIBE.md
+
+# Docker / deploy
+Dockerfile
+deploy/
+
+# Node internals (npm excludes node_modules by default, belt-and-suspenders)
+node_modules/
+
+# Lock file (consumers resolve their own)
+package-lock.json
