@@ -8,15 +8,15 @@
     "whats-admin": "src/admin.js"
   },
   "scripts": {
-    "start": "node src/main.js serve",
-    "serve:http": "node src/main.js serve-http",
-    "admin": "node src/admin.js",
-    "login": "node src/admin.js login",
-    "login:code": "node src/admin.js login --code",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
-    "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
-    "stop": "node src/admin.js server stop",
-    "status": "node src/admin.js status"
+    "start": "bun src/main.js serve",
+    "serve:http": "bun src/main.js serve-http",
+    "admin": "bun src/admin.js",
+    "login": "bun src/admin.js login",
+    "login:code": "bun src/admin.js login --code",
+    "test": "bun x jest --runInBand --coverage",
+    "test:watch": "bun x jest --watch",
+    "stop": "bun src/admin.js server stop",
+    "status": "bun src/admin.js status"
   },
   "keywords": [
     "whatsapp",
@@ -30,6 +30,7 @@
   "license": "MIT",
   "type": "commonjs",
   "engines": {
+    "bun": ">=1.0.0",
     "node": ">=18.0.0"
   },
   "dependencies": {

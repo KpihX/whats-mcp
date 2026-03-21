@@ -4,11 +4,11 @@ stages:
 
 validate_project:
   stage: validate
-  image: node:22-bookworm-slim
+  image: oven/bun:1
   script:
-    - npm ci
-    - npm test -- --runInBand
-    - node -e "const { loadConfig } = require('./src/config'); const cfg = loadConfig(); if (cfg.server.name !== 'whats-mcp') throw new Error('Unexpected package metadata wiring'); console.log('whats-mcp config smoke test OK');"
+    - bun install --frozen-lockfile
+    - bun x jest --runInBand
+    - bun -e "const { loadConfig } = require('./src/config'); const cfg = loadConfig(); if (cfg.server.name !== 'whats-mcp') throw new Error('Unexpected package metadata wiring'); console.log('whats-mcp config smoke test OK');"
 
 deploy_homelab:
   stage: deploy
@@ -50,5 +50,5 @@ deploy_homelab:
         sleep 3
       done
     - docker inspect --format '{{.State.Health.Status}}' whats-mcp | grep -qx healthy
-    - docker exec whats-mcp node -e "fetch('http://127.0.0.1:8092/health').then((r) => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"
+    - docker exec whats-mcp bun -e "fetch('http://127.0.0.1:8092/health').then((r) => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"
     - docker image prune -f
