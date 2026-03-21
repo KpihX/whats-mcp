@@ -22,6 +22,8 @@ All notable changes to **whats-mcp** will be documented in this file.
 - **Admin logging parity** — shared admin logging now records Telegram commands, replies, and errors into the common admin log file.
 - **Package-internal env loading** — `src/.env` is loaded automatically before runtime environment overrides.
 - **Deploy health probes fixed** — Docker Compose and GitLab now use Node-native fetch probes instead of assuming `curl` exists inside the image.
+- **Container operator binaries exposed** — the image now installs `whats-mcp` and `whats-admin` on `PATH` so `docker exec ... whats-admin ...` works directly.
+- **Admin reconnect path clarified** — CLI and Telegram now expose a `reconnect` operator action, and pairing code login accepts phone formats like `+33605957785`.
 
 ## [0.1.0]
 

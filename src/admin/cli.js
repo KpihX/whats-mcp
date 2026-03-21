@@ -107,6 +107,10 @@ function confirm(question) {
   );
 }
 
+function normalizePhoneNumber(raw) {
+  return String(raw || "").replace(/[^\d]/g, "");
+}
+
 /** Read auth creds.json and return the "me" field if present. */
 function readCredsMe() {
   try {
@@ -260,9 +264,10 @@ program
           "  Phone number (with country code, e.g. 33612345678): ",
         );
       }
+      phone = normalizePhoneNumber(phone);
       if (!phone || !/^\d{8,15}$/.test(phone)) {
         console.error(
-          c.red("  Invalid phone number. Use digits only with country code."),
+          c.red("  Invalid phone number. Use country code; separators are allowed and will be stripped."),
         );
         process.exit(1);
       }
@@ -638,6 +643,24 @@ serverCmd
       console.log(c.dim("  Your MCP client will restart it automatically on next request."));
     } catch (e) {
       console.error(`  ${fail()} Failed to stop server: ${e.message}`);
+    }
+  });
+
+serverCmd
+  .command("reconnect")
+  .description("Alias for restart, used when the WhatsApp runtime needs a fresh connection cycle")
+  .action(() => {
+    const pid = readPid();
+    if (!isRunning(pid)) {
+      console.log(`  ${c.dim("Server is not running.")}`);
+      return;
+    }
+    try {
+      process.kill(pid, "SIGTERM");
+      console.log(`  ${ok()} Server stopped (PID ${pid}).`);
+      console.log(c.dim("  The service will reconnect on next start or MCP request."));
+    } catch (e) {
+      console.error(`  ${fail()} Failed to reconnect server: ${e.message}`);
     }
   });
 

@@ -73,11 +73,11 @@ function dispatchTelegramCommand(command, args, onRestart) {
     const limit = Number.parseInt(args[0] || "20", 10);
     return getLogsText(Number.isNaN(limit) ? 20 : limit);
   }
-  if (command === "/restart") {
+  if (command === "/restart" || command === "/reconnect") {
     if (onRestart) {
       setTimeout(() => onRestart(), 1000);
     }
-    return "whats-mcp restart requested";
+    return "whats-mcp reconnect requested";
   }
   return "Unknown command. Use /help.";
 }

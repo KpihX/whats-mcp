@@ -117,9 +117,18 @@ whats-admin status
 whats-admin guide
 whats-admin login [--code] [--phone N]
 whats-admin logout [-f]
-whats-admin server status|stop|restart|pid|test
+whats-admin server status|stop|restart|reconnect|pid|test
 whats-admin config show|edit|reset|path
 whats-admin logs show|tail|clean|path
+```
+
+Container usage:
+
+```bash
+docker exec -it whats-mcp whats-admin status
+docker exec -it whats-mcp whats-admin login
+docker exec -it whats-mcp whats-admin login --code --phone +33605957785
+docker exec -it whats-mcp whats-admin server reconnect
 ```
 
 ## Telegram Admin
@@ -140,6 +149,7 @@ Current commands:
 /health
 /urls
 /logs [lines]
+/reconnect
 /restart
 ```
 

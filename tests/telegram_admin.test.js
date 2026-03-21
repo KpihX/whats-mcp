@@ -33,6 +33,6 @@ describe("telegram admin dispatch", () => {
     jest.resetModules();
     const restart = jest.fn();
     const { dispatchTelegramCommand } = require("../src/admin/telegram");
-    expect(dispatchTelegramCommand("/restart", [], restart)).toBe("whats-mcp restart requested");
+    expect(dispatchTelegramCommand("/restart", [], restart)).toBe("whats-mcp reconnect requested");
   });
 });

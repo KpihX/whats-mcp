@@ -121,7 +121,7 @@ function adminHelpText() {
     "  - whats-admin guide",
     "  - whats-admin login [--code] [--phone N]",
     "  - whats-admin logout [-f]",
-    "  - whats-admin server status|stop|restart|pid|test",
+    "  - whats-admin server status|stop|restart|reconnect|pid|test",
     "  - whats-admin config show|edit|reset|path",
     "  - whats-admin logs show|tail|clean|path",
     "- HTTP:",
@@ -135,6 +135,7 @@ function adminHelpText() {
     "  - /health",
     "  - /urls",
     "  - /logs [lines]",
+    "  - /reconnect",
     "  - /restart",
   ].join("\n");
 }
