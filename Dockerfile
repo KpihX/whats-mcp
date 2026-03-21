@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY package.json bun.lock ./
 RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && git config --global url."https://github.com/".insteadOf "git@github.com:" \
     && bun install --frozen-lockfile --production \
     && apt-get purge -y git && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*

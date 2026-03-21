@@ -14,6 +14,7 @@ validate_project:
     - |
       if command -v bun >/dev/null 2>&1; then
         apt-get update -qq && apt-get install -y --no-install-recommends git
+        git config --global url."https://github.com/".insteadOf "git@github.com:"
         bun install --frozen-lockfile
         bun x jest --runInBand
         bun -e "const { loadConfig } = require('./src/config'); const cfg = loadConfig(); if (cfg.server.name !== 'whats-mcp') throw new Error('Unexpected package metadata wiring'); console.log('whats-mcp config smoke test OK');"
@@ -24,6 +25,7 @@ validate_project:
           oven/bun:1 \
           sh -c '
             apt-get update -qq && apt-get install -y --no-install-recommends git &&
+            git config --global url."https://github.com/".insteadOf "git@github.com:" &&
             bun install --frozen-lockfile &&
             bun x jest --runInBand &&
             bun -e "const { loadConfig } = require(\"./src/config\"); const cfg = loadConfig(); if (cfg.server.name !== \"whats-mcp\") throw new Error(\"Unexpected package metadata wiring\"); console.log(\"whats-mcp config smoke test OK\");"
