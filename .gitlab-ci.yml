@@ -49,5 +49,5 @@ deploy_homelab:
         sleep 3
       done
     - docker inspect --format '{{.State.Health.Status}}' whats-mcp | grep -qx healthy
-    - docker exec whats-mcp curl -fsS http://127.0.0.1:8092/health
+    - docker exec whats-mcp node -e "fetch('http://127.0.0.1:8092/health').then((r) => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"
     - docker image prune -f

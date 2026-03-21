@@ -21,6 +21,7 @@ All notable changes to **whats-mcp** will be documented in this file.
 - **HTTP admin tests** — `tests/http_app.test.js` validates the new handler surface.
 - **Admin logging parity** — shared admin logging now records Telegram commands, replies, and errors into the common admin log file.
 - **Package-internal env loading** — `src/.env` is loaded automatically before runtime environment overrides.
+- **Deploy health probes fixed** — Docker Compose and GitLab now use Node-native fetch probes instead of assuming `curl` exists inside the image.
 
 ## [0.1.0]
 
