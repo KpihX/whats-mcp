@@ -1,0 +1,12 @@
+.agent/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+COPILOT.md
+VIBE.md
+.git/
+node_modules/
+coverage/
+.env
+deploy/.env
+auth/

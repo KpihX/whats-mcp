@@ -1,0 +1,42 @@
+services:
+  whats-mcp:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: whats-mcp
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - whats_mcp_data:/data
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8092/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whats-mcp-private.rule=Host(`whats.kpihx-labs.com`)"
+      - "traefik.http.routers.whats-mcp-private.entrypoints=websecure"
+      - "traefik.http.routers.whats-mcp-private.tls=true"
+      - "traefik.http.routers.whats-mcp-private.tls.certresolver=myresolver"
+      - "traefik.http.routers.whats-mcp-private.middlewares=whats-mcp-headers"
+      - "traefik.http.routers.whats-mcp-fallback.rule=Host(`whats.homelab`)"
+      - "traefik.http.routers.whats-mcp-fallback.entrypoints=websecure"
+      - "traefik.http.routers.whats-mcp-fallback.tls=true"
+      - "traefik.http.routers.whats-mcp-fallback.middlewares=whats-mcp-headers"
+      - "traefik.http.services.whats-mcp.loadbalancer.server.port=8092"
+      - "traefik.http.middlewares.whats-mcp-headers.headers.browserxssfilter=true"
+      - "traefik.http.middlewares.whats-mcp-headers.headers.contenttypenosniff=true"
+      - "traefik.http.middlewares.whats-mcp-headers.headers.framedeny=true"
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  whats_mcp_data:

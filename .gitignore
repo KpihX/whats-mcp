@@ -1,0 +1,15 @@
+node_modules/
+.env
+src/.env
+auth/
+*.pid
+*.log
+coverage/
+lancedb/
+.agent/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+COPILOT.md
+VIBE.md
+deploy/.env

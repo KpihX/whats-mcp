@@ -1,0 +1,53 @@
+stages:
+  - validate
+  - deploy
+
+validate_project:
+  stage: validate
+  image: node:22-bookworm-slim
+  script:
+    - npm ci
+    - npm test -- --runInBand
+    - node -e "const { loadConfig } = require('./src/config'); const cfg = loadConfig(); if (cfg.server.name !== 'whats-mcp') throw new Error('Unexpected package metadata wiring'); console.log('whats-mcp config smoke test OK');"
+
+deploy_homelab:
+  stage: deploy
+  tags:
+    - homelab
+  variables:
+    GIT_CLEAN_FLAGS: none
+  only:
+    - main
+  needs:
+    - validate_project
+  script:
+    - echo "🚀 Deploying whats-mcp to the homelab..."
+    - cd deploy
+    - echo "WHATSAPP_STATE_DIR=/data/state" > .env
+    - echo "WHATSAPP_LOG_LEVEL=error" >> .env
+    - echo "WHATSAPP_PRINT_QR=false" >> .env
+    - echo "WHATS_MCP_HTTP_HOST=0.0.0.0" >> .env
+    - echo "WHATS_MCP_HTTP_PORT=8092" >> .env
+    - echo "WHATS_MCP_HTTP_MCP_PATH=/mcp" >> .env
+    - echo "WHATS_MCP_ADMIN_ENV_FILE=/data/whats-admin.env" >> .env
+    - echo "WHATS_MCP_PUBLIC_BASE_URL=https://whats.kpihx-labs.com" >> .env
+    - echo "WHATS_MCP_FALLBACK_BASE_URL=https://whats.homelab" >> .env
+    - echo "TELEGRAM_WHATS_HOMELAB_TOKEN=$TELEGRAM_WHATS_HOMELAB_TOKEN" >> .env
+    - echo "TELEGRAM_CHAT_IDS=$TELEGRAM_CHAT_IDS" >> .env
+    - docker compose config -q
+    - docker compose up -d --build --remove-orphans
+    - |
+      for attempt in $(seq 1 20); do
+        status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}starting{{end}}' whats-mcp 2>/dev/null || true)"
+        if [ "$status" = "healthy" ]; then
+          break
+        fi
+        if [ "$status" = "unhealthy" ]; then
+          docker logs --tail 200 whats-mcp
+          exit 1
+        fi
+        sleep 3
+      done
+    - docker inspect --format '{{.State.Health.Status}}' whats-mcp | grep -qx healthy
+    - docker exec whats-mcp curl -fsS http://127.0.0.1:8092/health
+    - docker image prune -f

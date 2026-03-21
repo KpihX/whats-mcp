@@ -1,0 +1,46 @@
+{
+  "name": "whats-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for WhatsApp — intent-first messaging, chat management, analytics, and operator surfaces over stdio and HTTP.",
+  "main": "src/main.js",
+  "bin": {
+    "whats-mcp": "src/main.js",
+    "whats-admin": "src/admin.js"
+  },
+  "scripts": {
+    "start": "node src/main.js serve",
+    "serve:http": "node src/main.js serve-http",
+    "admin": "node src/admin.js",
+    "login": "node src/admin.js login",
+    "login:code": "node src/admin.js login --code",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
+    "stop": "node src/admin.js server stop",
+    "status": "node src/admin.js status"
+  },
+  "keywords": [
+    "whatsapp",
+    "mcp",
+    "model-context-protocol",
+    "baileys",
+    "messaging",
+    "automation"
+  ],
+  "author": "Ivann KAMDEM <kapoivha@gmail.com>",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "commander": "^13.1.0",
+    "express": "^5.2.1",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}

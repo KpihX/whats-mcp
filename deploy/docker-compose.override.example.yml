@@ -1,0 +1,5 @@
+services:
+  whats-mcp:
+    environment:
+      WHATSAPP_LOG_LEVEL: info
+      WHATSAPP_PRINT_QR: "false"

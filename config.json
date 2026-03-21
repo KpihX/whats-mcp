@@ -1,0 +1,19 @@
+{
+  "server": {
+    "state_directory": "~/.mcps/whatsapp"
+  },
+  "connection": {
+    "print_qr_in_terminal": true,
+    "reconnect_interval_ms": 3000,
+    "max_reconnect_attempts": 10,
+    "mark_online_on_connect": false
+  },
+  "store": {
+    "max_messages_per_chat": 5000,
+    "max_chats": 1000
+  },
+  "logging": {
+    "level": "error"
+  },
+  "watchlists": {}
+}
