@@ -117,32 +117,52 @@ function startTelegramAdmin(handlers = {}) {
   TELEGRAM_RUNTIME.started_at = Math.floor(Date.now() / 1000);
 
   let offset = 0;
-  pollerHandle = setInterval(async () => {
+
+  const pollOnce = async ({ discardBacklog = false } = {}) => {
     TELEGRAM_RUNTIME.last_poll_at = Math.floor(Date.now() / 1000);
-    try {
-      const updates = await apiCall("getUpdates", {
-        timeout: 0,
-        offset,
-        allowed_updates: ["message"],
-      });
-      TELEGRAM_RUNTIME.last_success_at = Math.floor(Date.now() / 1000);
-      for (const update of updates) {
-        offset = update.update_id + 1;
-        TELEGRAM_RUNTIME.last_update_id = update.update_id;
-        const message = update.message;
-        if (!message || !message.text) continue;
-        const chatId = String(message.chat.id);
-        TELEGRAM_RUNTIME.last_chat_id = chatId;
-        if (!allowedChatIds.includes(chatId)) continue;
-        const [command, ...args] = message.text.trim().split(/\s+/);
-        TELEGRAM_RUNTIME.last_command = command;
-          const reply = await dispatchTelegramCommand(command, args, handlers);
-        TELEGRAM_RUNTIME.last_reply_preview = reply.slice(0, 120);
-        appendAdminLog(`telegram command chat=${chatId} command=${command}`);
-        await sendMessage(chatId, reply);
-        appendAdminLog(`telegram reply chat=${chatId} preview=${reply.slice(0, 120)}`);
+    const updates = await apiCall("getUpdates", {
+      timeout: 0,
+      offset,
+      allowed_updates: ["message"],
+    });
+    TELEGRAM_RUNTIME.last_success_at = Math.floor(Date.now() / 1000);
+    if (discardBacklog) {
+      if (updates.length > 0) {
+        const latestUpdate = updates[updates.length - 1];
+        offset = latestUpdate.update_id + 1;
+        TELEGRAM_RUNTIME.last_update_id = latestUpdate.update_id;
+        appendAdminLog(`telegram backlog discarded count=${updates.length} last_update_id=${latestUpdate.update_id}`);
       }
       TELEGRAM_RUNTIME.last_error = null;
+      return;
+    }
+    for (const update of updates) {
+      offset = update.update_id + 1;
+      TELEGRAM_RUNTIME.last_update_id = update.update_id;
+      const message = update.message;
+      if (!message || !message.text) continue;
+      const chatId = String(message.chat.id);
+      TELEGRAM_RUNTIME.last_chat_id = chatId;
+      if (!allowedChatIds.includes(chatId)) continue;
+      const [command, ...args] = message.text.trim().split(/\s+/);
+      TELEGRAM_RUNTIME.last_command = command;
+      const reply = await dispatchTelegramCommand(command, args, handlers);
+      TELEGRAM_RUNTIME.last_reply_preview = reply.slice(0, 120);
+      appendAdminLog(`telegram command chat=${chatId} command=${command}`);
+      await sendMessage(chatId, reply);
+      appendAdminLog(`telegram reply chat=${chatId} preview=${reply.slice(0, 120)}`);
+    }
+    TELEGRAM_RUNTIME.last_error = null;
+  };
+
+  pollOnce({ discardBacklog: true }).catch((error) => {
+    TELEGRAM_RUNTIME.last_error = error.message || String(error);
+    appendAdminLog(`telegram bootstrap error ${TELEGRAM_RUNTIME.last_error}`);
+  });
+
+  pollerHandle = setInterval(async () => {
+    try {
+      await pollOnce();
     } catch (error) {
       TELEGRAM_RUNTIME.last_error = error.message || String(error);
       appendAdminLog(`telegram error ${TELEGRAM_RUNTIME.last_error}`);

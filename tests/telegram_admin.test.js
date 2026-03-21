@@ -11,6 +11,11 @@ jest.mock("../src/admin/service", () => ({
 }));
 
 describe("telegram admin dispatch", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+    delete global.fetch;
+  });
+
   test("reports enablement from environment", () => {
     jest.resetModules();
     process.env.TELEGRAM_WHATS_HOMELAB_TOKEN = "token";
@@ -55,5 +60,45 @@ describe("telegram admin dispatch", () => {
       expect(handlers.onRestart).toHaveBeenCalledTimes(1);
       expect(handlers.onReconnect).not.toHaveBeenCalled();
       jest.useRealTimers();
+    });
+
+    test("drops startup backlog before polling new commands", async () => {
+      jest.useFakeTimers();
+      jest.resetModules();
+      process.env.TELEGRAM_WHATS_HOMELAB_TOKEN = "token";
+      process.env.TELEGRAM_CHAT_IDS = "1397540599";
+
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValueOnce({
+          json: async () => ({
+            ok: true,
+            result: [{ update_id: 41, message: { chat: { id: 1397540599 }, text: "/restart" } }],
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            ok: true,
+            result: [{ update_id: 42, message: { chat: { id: 1397540599 }, text: "/status" } }],
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({ ok: true, result: true }),
+        });
+
+      global.fetch = fetchMock;
+
+      const handlers = {
+        onReconnect: jest.fn(),
+        onRestart: jest.fn(),
+      };
+      const { startTelegramAdmin } = require("../src/admin/telegram");
+      startTelegramAdmin(handlers);
+
+      await jest.runOnlyPendingTimersAsync();
+      expect(handlers.onRestart).not.toHaveBeenCalled();
+
+      await jest.advanceTimersByTimeAsync(5000);
+      expect(handlers.onRestart).not.toHaveBeenCalled();
     });
   });
