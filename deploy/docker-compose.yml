@@ -1,3 +1,5 @@
+name: whats-mcp
+
 services:
   whats-mcp:
     build:
