@@ -13,6 +13,7 @@
     "admin": "bun src/admin.js",
     "login": "bun src/admin.js login",
     "login:code": "bun src/admin.js login --code",
+    "build": "echo 'No build required'",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "stop": "bun src/admin.js server stop",
