@@ -2,7 +2,7 @@
  * whats-mcp — Utility tools (6 tools).
  *
  * connection_status, whatsapp_guide, send_presence,
- * read_messages, search_messages, download_media,
+ * read_messages, search_messages, download_media, cleanup_media,
  * analytics_overview, analytics_top_chats, analytics_chat_insights,
  * analytics_timeline, analytics_search
  */
@@ -240,7 +240,7 @@ module.exports = [
       name: "download_media",
       description:
         "Download media (image, video, audio, document, sticker) from a message." +
-        " Returns the media as base64-encoded data." +
+        " Returns the local file path where the media was saved ($HOME/.cache/whats_media/)." +
         " The message must be in the local store.",
       inputSchema: {
         type: "object",
@@ -291,17 +291,80 @@ module.exports = [
 
       // Use Baileys downloadMediaMessage
       const { downloadMediaMessage } = require("@whiskeysockets/baileys");
-      const buffer = await downloadMediaMessage(msg, "buffer", {});
-      const base64 = buffer.toString("base64");
+      let buffer;
+      try {
+        buffer = await downloadMediaMessage(msg, "buffer", {});
+      } catch (err) {
+        return errResult(`Failed to download media: ${err.message}`);
+      }
+
+      const os = require("os");
+      const fs = require("fs");
+      const path = require("path");
+
+      const cacheDir = path.join(os.homedir(), ".cache", "whats_media");
+      if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+      }
+
+      let fileName = mediaMsg.fileName || mediaMsg.title || `${message_id}.${mediaType}`;
+      fileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      
+      let ext = path.extname(fileName);
+      if (!ext && mediaMsg.mimetype) {
+        const mimeExt = mediaMsg.mimetype.split("/")[1]?.split(";")[0];
+        if (mimeExt) fileName += `.${mimeExt}`;
+      }
+
+      const filePath = path.join(cacheDir, fileName);
+      fs.writeFileSync(filePath, buffer);
 
       return okResult({
         message_id,
         media_type: mediaType,
         mimetype: mediaMsg.mimetype || null,
-        filename: mediaMsg.fileName || null,
-        file_length: mediaMsg.fileLength ? Number(mediaMsg.fileLength) : buffer.length,
-        base64_length: base64.length,
-        data: base64,
+        filename: fileName,
+        file_length: buffer.length,
+        saved_to: filePath,
+      });
+    },
+  },
+
+  // 7. cleanup_media
+  {
+    definition: {
+      name: "cleanup_media",
+      description: "Clear the local WhatsApp media cache directory ($HOME/.cache/whats_media/).",
+      inputSchema: { type: "object", properties: {} },
+    },
+    handler: async () => {
+      const os = require("os");
+      const fs = require("fs");
+      const path = require("path");
+      
+      const cacheDir = path.join(os.homedir(), ".cache", "whats_media");
+      if (!fs.existsSync(cacheDir)) {
+        return okResult({ status: "skipped", message: "Cache directory does not exist." });
+      }
+      
+      let count = 0;
+      let bytesFreed = 0;
+      const files = fs.readdirSync(cacheDir);
+      for (const file of files) {
+        const filePath = path.join(cacheDir, file);
+        const stats = fs.statSync(filePath);
+        if (stats.isFile()) {
+            bytesFreed += stats.size;
+            fs.unlinkSync(filePath);
+            count++;
+        }
+      }
+      
+      return okResult({
+        status: "cleaned",
+        files_deleted: count,
+        bytes_freed: bytesFreed,
+        cache_dir: cacheDir
       });
     },
   },
@@ -313,7 +376,7 @@ function _guessCategory(name) {
   if (/channel|newsletter/.test(name)) return "channels";
   if (/label/.test(name)) return "labels";
   if (/^analytics_|^daily_digest/.test(name)) return "analytics";
-  if (/^connection_status$|^whatsapp_guide$|^send_presence$|^read_messages$|^search_messages$|^download_media$/.test(name)) {
+  if (/^connection_status$|^whatsapp_guide$|^send_presence$|^read_messages$|^search_messages$|^download_media$|^cleanup_media$/.test(name)) {
     return "utilities";
   }
   if (/^send_|^edit_|^delete_|^forward_|^batch_/.test(name)) return "messaging";

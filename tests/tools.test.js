@@ -110,9 +110,9 @@ function parseResult(result) {
 // ── Registry tests ───────────────────────────────────────────────────────────
 
 describe("Tool Registry", () => {
-  test("listTools returns 64 tools", () => {
+  test("listTools returns 65 tools", () => {
     const tools = listTools();
-    expect(tools.length).toBe(64);
+    expect(tools.length).toBe(65);
   });
 
   test("all tools have unique names", () => {
@@ -877,7 +877,7 @@ describe("Utility tools", () => {
     const result = await callTool("whatsapp_guide", {}, ctx);
     const data = parseResult(result);
     expect(data.server).toBe("whats-mcp");
-    expect(data.total_tools).toBe(64);
+    expect(data.total_tools).toBe(65);
     expect(data.categories).toBeDefined();
     expect(data.categories.channels).toContain("delete_channel");
     expect(data.categories.labels).toContain("manage_chat_label");

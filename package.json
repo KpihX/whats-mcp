@@ -1,6 +1,6 @@
 {
   "name": "whats-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for WhatsApp — intent-first messaging, chat management, analytics, and operator surfaces over stdio and HTTP.",
   "main": "src/main.js",
   "bin": {

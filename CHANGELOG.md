@@ -4,6 +4,12 @@ All notable changes to **whats-mcp** will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0]
+
+### Added
+- **Local Media Cache Tooling** — `download_media` now saves extracted Baileys buffers to local disk (`$HOME/.cache/whats_media/`) and returns the paths instead of flooding the MCP context with multi-megabyte Base64 strings.
+- **`cleanup_media` tool** — added a new utility tool to clear the local media cache directory and free up space safely.
+
 ### Changed
 
 - **Project rename finalized** — the public package and operator surface now consistently use `whats-mcp` / `whats-admin`.
