@@ -27,20 +27,33 @@ services:
       retries: 5
       start_period: 30s
     labels:
+      # --- Activation Traefik ---
       - "traefik.enable=true"
-      - "traefik.http.routers.whats-mcp-private.rule=Host(`whats.kpihx-labs.com`)"
-      - "traefik.http.routers.whats-mcp-private.entrypoints=websecure"
-      - "traefik.http.routers.whats-mcp-private.tls=true"
-      - "traefik.http.routers.whats-mcp-private.tls.certresolver=myresolver"
-      - "traefik.http.routers.whats-mcp-private.middlewares=whats-mcp-headers"
-      - "traefik.http.routers.whats-mcp-fallback.rule=Host(`whats.homelab`)"
-      - "traefik.http.routers.whats-mcp-fallback.entrypoints=websecure"
-      - "traefik.http.routers.whats-mcp-fallback.tls=true"
-      - "traefik.http.routers.whats-mcp-fallback.middlewares=whats-mcp-headers"
-      - "traefik.http.services.whats-mcp.loadbalancer.server.port=8092"
+
+      # --- Routes Hybrides (Interne + Public) ---
+      # Accès interne via Tailscale (.homelab) + Accès public via Cloudflare (.kpihx-labs.com)
+      - "traefik.http.routers.whats-mcp.rule=Host(`whats.homelab`) || Host(`whats.kpihx-labs.com`)"
+      - "traefik.http.routers.whats-mcp.entrypoints=websecure"
+      - "traefik.http.routers.whats-mcp.tls=true"
+      - "traefik.http.routers.whats-mcp.tls.certresolver=myresolver"
+
+      # --- Sécurité (IP Allowlist + Cloudflare Access) ---
+      # 1. Middleware Chain : IP Allowlist (Cloudflare IPs) + Headers
+      - "traefik.http.routers.whats-mcp.middlewares=whats-mcp-security-chain"
+
+      # 2. IP Allowlist (Seulement les IPs Cloudflare)
+      - "traefik.http.middlewares.whats-mcp-ip-allowlist.ipwhitelist.sourcerange=10.0.0.0/8,173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,131.0.72.0/22"
+
+      # 3. Headers de sécurité (existants)
       - "traefik.http.middlewares.whats-mcp-headers.headers.browserxssfilter=true"
       - "traefik.http.middlewares.whats-mcp-headers.headers.contenttypenosniff=true"
       - "traefik.http.middlewares.whats-mcp-headers.headers.framedeny=true"
+
+      # 4. Chain Middleware (Ordre important : IP Allowlist -> Headers)
+      - "traefik.http.middlewares.whats-mcp-security-chain.chain.middlewares=whats-mcp-ip-allowlist,whats-mcp-headers"
+
+      # --- Service ---
+      - "traefik.http.services.whats-mcp.loadbalancer.server.port=8092"
 
 networks:
   proxy:
